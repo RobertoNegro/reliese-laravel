@@ -7,6 +7,8 @@
 
 namespace Reliese\Coders\Model;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Reliese\Meta\Blueprint;
 use Illuminate\Support\Fluent;
@@ -259,6 +261,10 @@ class Model
         // Due to some casting problems when converting null to a Carbon instance,
         // we are going to treat Soft Deletes field as string.
         if ($column->name == $this->getDeletedAtField()) {
+            $cast = 'string';
+        }
+
+        if ($cast === 'uuid') {
             $cast = 'string';
         }
 
@@ -712,6 +718,16 @@ class Model
 
         if ($this->usesSoftDeletes()) {
             $traits = array_merge([SoftDeletes::class], $traits);
+        }
+        
+        if (! $this->getBlueprint()->hasColumn('id')) {
+            return $traits;
+        }
+
+        $idColumnType = Arr::get($this->getBlueprint()->column('id')->getAttributes(), 'type');
+
+        if ($idColumnType === 'uuid' || $idColumnType === 'string') {
+            $traits = array_merge([HasUuids::class], $traits);
         }
 
         return $traits;
